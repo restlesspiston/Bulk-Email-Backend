@@ -82,7 +82,7 @@ const sendEmails = async (batch) => {
 };
 
 // Start the cron job for scheduling email sending
-cron.schedule('14 22 * * *', async () => {
+cron.schedule('0 12 * * *', async () => {
     try {
         const unsentEmails = await Email.find({ sent: false }).limit(400);
 
