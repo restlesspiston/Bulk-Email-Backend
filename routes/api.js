@@ -71,4 +71,19 @@ router.get('/status', async (req, res) => {
     }
 });
 
+// Delete all emails and template data
+router.post('/delete', async (req, res) => {
+    try {
+        // Delete all emails
+        await Email.deleteMany();
+
+        // Delete the single template
+        await Template.deleteMany();
+
+        res.status(200).json({ message: 'All emails and templates have been deleted successfully.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to delete emails and templates.' });
+    }
+});
+
 module.exports = router;
