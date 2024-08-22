@@ -7,22 +7,23 @@ const cron = require('node-cron');
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASS,
+        user: process.env.GMAIL_USER || 'default@gmail.com',
+        pass: process.env.GMAIL_PASS || 'defaultpassword',
     }
 });
 
 // Function to send emails
 const sendEmails = async (batch) => {
     const template = await Template.findOne();
+    if (!template) {
+        console.error('No email template found. Email sending aborted.');
+        return;
+    }
+
     for (const emailData of batch) {
         try {
-            if (!template) {
-                throw new Error('Template not found');
-            }
-
             await transporter.sendMail({
-                from: process.env.GMAIL_FROM,
+                from: process.env.GMAIL_FROM || 'default@gmail.com',
                 to: emailData.recipientEmail,
                 subject: template.subject,
                 html: template.content,
@@ -36,15 +37,13 @@ const sendEmails = async (batch) => {
     }
 };
 
+// Cron job for cleanup
 const cron1 = async () => {
     try {
         const unsentCount = await Email.countDocuments({ sent: false });
 
         if (unsentCount === 0) {
-            // Delete all sent emails
             await Email.deleteMany({ sent: true });
-
-            // Delete the single template
             await Template.deleteMany();
 
             console.log('All sent emails and the template have been deleted.');
@@ -54,19 +53,21 @@ const cron1 = async () => {
     } catch (error) {
         console.error('Failed to run cleanup job:', error);
     }
-});
+};
 
-// Start the cron job for scheduling email sending
+// Cron job for sending emails
 const cron2 = async () => {
     try {
         const unsentEmails = await Email.find({ sent: false }).limit(400);
 
         if (unsentEmails.length > 0) {
             await sendEmails(unsentEmails);
+        } else {
+            console.log('No unsent emails found.');
         }
     } catch (error) {
         console.error('Error in cron job:', error);
     }
-});
+};
 
 module.exports = { cron1, cron2 };
