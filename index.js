@@ -33,12 +33,12 @@ const getServerIpAddress = () => {
 
 const connectDB = async () => {
     try {
-        await mongoose.connect(process.env.MONGO_URI);
+        await mongoose.connect("mongodb+srv://smartworld69gurugram:q8Vsfe4tJxjbOYe0@restlesspiston.lvm3y.mongodb.net/?retryWrites=true&w=majority&appName=restlesspiston");
         console.log('MongoDB connected');
-        const PORT = process.env.PORT || 8000;
+        const PORT = 8000;
         app.listen(PORT, "0.0.0.0", () => {
             const serverIp = getServerIpAddress();
-            console.log(`Server is running on http://${serverIp}:${PORT}`);
+            console.log(`Server is running on http://${serverIp}:${8000}`);
         });
     } catch (error) {
         console.error(error);
