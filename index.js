@@ -3,7 +3,6 @@ const express = require('express');
 const apiRoutes = require('./routes/api');
 const mongoose = require('mongoose');
 const os = require('os');
-const { cron1, cron2 } = require('./routes/cron');
 
 const app = express();
 
@@ -17,8 +16,6 @@ app.use(cors({
 app.use(express.json());
 
 app.use(apiRoutes);
-app.use('/cron1', cron1);
-app.use('/cron2', cron2);
 
 // Function to get the server's IP address
 const getServerIpAddress = () => {
