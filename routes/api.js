@@ -10,8 +10,8 @@ const router = express.Router();
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASS,
+        user: "smartworld69gurugram@gmail.com",
+        pass: "zcpzrkofktpyxdtj",
     }
 });
 
@@ -83,7 +83,7 @@ const sendEmails = async (batch) => {
             }
 
             await transporter.sendMail({
-                from: process.env.GMAIL_FROM,
+                from: "Smart World",
                 to: emailData.recipientEmail,
                 subject: template.subject,
                 html: template.content,
