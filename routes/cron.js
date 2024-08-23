@@ -61,7 +61,7 @@ const cron2 = async () => {
         const unsentEmails = await Email.find({ sent: false }).limit(400);
 
         if (unsentEmails.length > 0) {
-            await sendEmails(unsentEmails);
+            sendEmails(unsentEmails);
         } else {
             console.log('No unsent emails found.');
         }
