@@ -1,8 +1,35 @@
 const express = require('express');
+const nodemailer = require('nodemailer');
+const cron = require('node-cron');
 const Email = require('../models/Email');
 const Template = require('../models/Template');
 
 const router = express.Router();
+
+// Create a new transporter using Gmail SMTP
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASS,
+    }
+});
+
+// Delete all emails and template data
+router.post('/delete', async (req, res) => {
+    try {
+        // Delete all emails
+        await Email.deleteMany();
+
+        // Delete the single template
+        await Template.deleteMany();
+
+        res.status(200).json({ message: 'All emails and templates have been deleted successfully.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to delete emails and templates.' });
+    }
+});
+
 
 // Store the email template
 router.post('/templates', async (req, res) => {
@@ -46,6 +73,43 @@ router.post('/store', async (req, res) => {
     }
 });
 
+// Function to send emails
+const sendEmails = async (batch) => {
+    const template = await Template.findOne();
+    for (const emailData of batch) {
+        try {
+            if (!template) {
+                throw new Error('Template not found');
+            }
+
+            await transporter.sendMail({
+                from: process.env.GMAIL_FROM,
+                to: emailData.recipientEmail,
+                subject: template.subject,
+                html: template.content,
+            });
+
+            emailData.sent = true;
+            await emailData.save();
+        } catch (error) {
+            console.error(`Failed to send email to ${emailData.recipientEmail}:`, error);
+        }
+    }
+};
+
+// Start the cron job for scheduling email sending
+cron.schedule('14 22 * * *', async () => {
+    try {
+        const unsentEmails = await Email.find({ sent: false }).limit(400);
+
+        if (unsentEmails.length > 0) {
+            await sendEmails(unsentEmails);
+        }
+    } catch (error) {
+        console.error('Error in cron job:', error);
+    }
+});
+
 // Checker route to inform the frontend
 router.get('/status', async (req, res) => {
     try {
@@ -71,18 +135,23 @@ router.get('/status', async (req, res) => {
     }
 });
 
-// Delete all emails and template data
-router.post('/delete', async (req, res) => {
+cron.schedule('0 0 * * *', async () => {
     try {
-        // Delete all emails
-        await Email.deleteMany();
+        const unsentCount = await Email.countDocuments({ sent: false });
 
-        // Delete the single template
-        await Template.deleteMany();
+        if (unsentCount === 0) {
+            // Delete all sent emails
+            await Email.deleteMany({ sent: true });
 
-        res.status(200).json({ message: 'All emails and templates have been deleted successfully.' });
+            // Delete the single template
+            await Template.deleteMany();
+
+            console.log('All sent emails and the template have been deleted.');
+        } else {
+            console.log('There are still unsent emails. No deletion performed.');
+        }
     } catch (error) {
-        res.status(500).json({ message: 'Failed to delete emails and templates.' });
+        console.error('Failed to run cleanup job:', error);
     }
 });
 
